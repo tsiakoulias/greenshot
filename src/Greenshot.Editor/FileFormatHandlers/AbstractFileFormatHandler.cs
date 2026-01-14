@@ -55,7 +55,8 @@ namespace Greenshot.Editor.FileFormatHandlers
         {
             if (TryLoadFromStream(stream, extension, out var bitmap))
             {
-                // ImageContainer.Image setter clones the bitmap, so we need to dispose the original
+                // FIX #2: ImageContainer.Image setter clones the bitmap internally,
+                // so we dispose the original source bitmap afterwards to prevent memory leak
                 using (bitmap)
                 {
                     var imageContainer = new ImageContainer(parent)

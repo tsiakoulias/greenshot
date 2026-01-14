@@ -90,6 +90,7 @@ namespace Greenshot.Editor.FileFormatHandlers
                     return false;
                 }
             }
+            
             Log.Info("Using special DIBV5 / Format17 format reader");
             // CF_DIBV5
             IntPtr gcHandle = IntPtr.Zero;
@@ -97,13 +98,16 @@ namespace Greenshot.Editor.FileFormatHandlers
             {
                 GCHandle handle = GCHandle.Alloc(dibBuffer, GCHandleType.Pinned);
                 gcHandle = GCHandle.ToIntPtr(handle);
-                // Create a temporary bitmap that references the pinned memory
+
+                // FIX #1: Create a temporary bitmap over the pinned memory, then clone it
+                // so the returned bitmap owns its own pixel buffer. This allows us to safely
+                // free the GCHandle without causing use-after-free corruption.
                 using var tempBitmap = new Bitmap(infoHeader.Width, infoHeader.Height,
                         -(int)(infoHeader.SizeImage / infoHeader.Height),
                         infoHeader.BitCount == 32 ? PixelFormat.Format32bppArgb : PixelFormat.Format24bppRgb,
                         IntPtr.Add(handle.AddrOfPinnedObject(), (int)infoHeader.OffsetToPixels + (infoHeader.Height - 1) * (int)(infoHeader.SizeImage / infoHeader.Height))
                     );
-                // Clone the bitmap so we own the pixel data, allowing us to free the GCHandle
+                // Clone to own buffer before freeing the GCHandle
                 bitmap = ImageHelper.Clone(tempBitmap) as Bitmap;
             }
             catch (Exception ex)
