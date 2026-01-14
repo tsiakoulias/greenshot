@@ -55,11 +55,15 @@ namespace Greenshot.Editor.FileFormatHandlers
         {
             if (TryLoadFromStream(stream, extension, out var bitmap))
             {
-                var imageContainer = new ImageContainer(parent)
+                // ImageContainer.Image setter clones the bitmap, so we need to dispose the original
+                using (bitmap)
                 {
-                    Image = bitmap
-                };
-                yield return imageContainer;
+                    var imageContainer = new ImageContainer(parent)
+                    {
+                        Image = bitmap
+                    };
+                    yield return imageContainer;
+                }
             }
         }
     }

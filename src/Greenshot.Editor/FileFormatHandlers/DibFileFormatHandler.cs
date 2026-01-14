@@ -97,11 +97,14 @@ namespace Greenshot.Editor.FileFormatHandlers
             {
                 GCHandle handle = GCHandle.Alloc(dibBuffer, GCHandleType.Pinned);
                 gcHandle = GCHandle.ToIntPtr(handle);
-                bitmap = new Bitmap(infoHeader.Width, infoHeader.Height,
+                // Create a temporary bitmap that references the pinned memory
+                using var tempBitmap = new Bitmap(infoHeader.Width, infoHeader.Height,
                         -(int)(infoHeader.SizeImage / infoHeader.Height),
                         infoHeader.BitCount == 32 ? PixelFormat.Format32bppArgb : PixelFormat.Format24bppRgb,
                         IntPtr.Add(handle.AddrOfPinnedObject(), (int)infoHeader.OffsetToPixels + (infoHeader.Height - 1) * (int)(infoHeader.SizeImage / infoHeader.Height))
                     );
+                // Clone the bitmap so we own the pixel data, allowing us to free the GCHandle
+                bitmap = ImageHelper.Clone(tempBitmap) as Bitmap;
             }
             catch (Exception ex)
             {
