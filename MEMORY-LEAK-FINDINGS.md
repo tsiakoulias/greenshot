@@ -92,7 +92,3 @@ This document outlines potential memory leaks identified in the Greenshot codeba
 | Uses finalizer instead of IDisposable | `src/Greenshot.Base/Core/TranslationData.cs` |
 | Uses `new` instead of `override` for Dispose | `src/Greenshot.Base/Controls/Pipette.cs` |
 | ExeIconCache could grow unbounded | `src/Greenshot.Base/Core/PluginUtils.cs` |
-
----
-
-*Analysis performed: January 2026*
