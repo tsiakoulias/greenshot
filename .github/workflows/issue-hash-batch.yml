@@ -23,7 +23,8 @@ jobs:
             console.log(`Starting batch process for up to ${batchSize} issues...`);
             
             // Search for issues that don't have the label and haven't been marked with a hash yet
-            const query = `repo:${context.repo.owner}/${context.repo.repo} is:issue -label:has-stack-trace`;
+            // Also exclude issues explicitly marked as not having a stack trace
+            const query = `repo:${context.repo.owner}/${context.repo.repo} is:issue -label:has-stack-trace -label:no-stack-trace`;
             
             const searchResult = await github.rest.search.issuesAndPullRequests({
               q: query,
@@ -37,8 +38,24 @@ jobs:
             
             for (const issue of issues) {
               const body = issue.body;
-              if (!body) continue;
-              if (body.indexOf(marker) !== -1) continue;
+              if (!body) {
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  labels: ['no-stack-trace']
+                });
+                continue;
+              }
+              if (body.indexOf(marker) !== -1) {
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  labels: ['has-stack-trace']
+                });
+                continue;
+              }
               
               const lines = body.split(/\r?\n/);
               let normalizedLines = [];
@@ -79,12 +96,18 @@ jobs:
                   issue_number: issue.number,
                   labels: ['has-stack-trace']
                 });
-                
-                // Small delay to respect secondary rate limits for write operations
-                await new Promise(resolve => setTimeout(resolve, 1000));
               } else {
-                console.log(`Issue #${issue.number}: No relevant stack trace found.`);
+                console.log(`Issue #${issue.number}: No relevant stack trace found. Labeling.`);
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  labels: ['no-stack-trace']
+                });
               }
+              
+              // Small delay to respect secondary rate limits for write operations
+              await new Promise(resolve => setTimeout(resolve, 1000));
             }
             
             console.log('Batch processing complete.');
