@@ -23,7 +23,6 @@ jobs:
             console.log(`Starting batch process for up to ${batchSize} issues...`);
             
             // Search for issues that don't have the label and haven't been marked with a hash yet
-            // We search for both open and closed issues
             const query = `repo:${context.repo.owner}/${context.repo.repo} is:issue -label:has-stack-trace`;
             
             const searchResult = await github.rest.search.issuesAndPullRequests({
@@ -63,7 +62,7 @@ jobs:
                 
                 console.log(`Processing issue #${issue.number}: Found stack trace, hash: ${hash}`);
                 
-                const newBody = body + "\n\n---\n**Stack Trace Hash:** `" + hash + "` " + marker + " " + hash + "]";
+                const newBody = body + "\n\n---\n**Stack Trace Hash:** [" + hash + "]";
                 
                 // Update issue body
                 await github.rest.issues.update({
@@ -84,9 +83,6 @@ jobs:
                 // Small delay to respect secondary rate limits for write operations
                 await new Promise(resolve => setTimeout(resolve, 1000));
               } else {
-                // If no stack trace found, we still mark it so we don't scan it again in the next batch
-                // You might want to use a different label like 'no-stack-trace-found' or just skip
-                // For now, we'll just skip it to keep the search query efficient for next runs
                 console.log(`Issue #${issue.number}: No relevant stack trace found.`);
               }
             }

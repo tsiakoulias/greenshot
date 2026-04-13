@@ -52,7 +52,7 @@ jobs:
               const searchResult = await github.rest.search.issuesAndPullRequests({ q: searchQuery });
               const duplicates = searchResult.data.items.filter(i => i.number !== context.payload.issue.number);
               
-              const newBody = body + "\n\n---\n**Stack Trace Hash:** `" + hash + "` " + marker + " " + hash + "]";
+              const newBody = body + "\n\n---\n**Stack Trace Hash:** [" + hash + "]";
               await github.rest.issues.update({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
