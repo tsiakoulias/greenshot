@@ -58,6 +58,7 @@ namespace Greenshot.Pipeline.Steps
                 var surface = context.Payload.EnsureSurface();
                 if (surface != null)
                 {
+                    surface.SurfaceMessage -= DestinationDispatcher.SurfaceMessageReceived;
                     surface.SurfaceMessage += DestinationDispatcher.SurfaceMessageReceived;
                 }
             }

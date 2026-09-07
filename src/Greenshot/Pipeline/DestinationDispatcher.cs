@@ -80,6 +80,7 @@ namespace Greenshot.Pipeline
                 : CoreConfig.ShowTrayNotification && !CoreConfig.HideTrayicon;
             if (showNotify)
             {
+                surface.SurfaceMessage -= SurfaceMessageReceived;
                 surface.SurfaceMessage += SurfaceMessageReceived;
             }
 

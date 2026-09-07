@@ -760,9 +760,9 @@ namespace Greenshot.Editor.Drawing
             };
             if (availableTranslations.Contains(Language.CurrentLanguage))
             {
-                menu.Items.Add(GetPushOutSubMenu());
+                menu.Items.Add(GetPushOutSubMenu(surface));
                 menu.Items.Add(GetFitSubMenu(surface));
-                menu.Items.Add(GetSnapSubMenu());
+                menu.Items.Add(GetSnapSubMenu(surface));
             }
 
             #endregion Push Out, Fit, Snap
@@ -869,13 +869,20 @@ namespace Greenshot.Editor.Drawing
         /// Moves all selected elements to one edge of the surface.
         /// </summary>
         /// <param name="direction">The direction in which to move the container.</param>
-        public void SnapAllToEdge(Direction direction)
+        /// <param name="surface">Optional target surface. If null, Parent will be used.</param>
+        public void SnapAllToEdge(Direction direction, ISurface surface = null)
         {
+            surface ??= Parent;
+            if (surface == null)
+            {
+                return;
+            }
+
             foreach (IDrawableContainer container in this)
             {
-                SnapContainerToEdge(direction, container);
+                SnapContainerToEdge(direction, container, surface);
             }
-            Parent.DeselectAllElements();
+            surface.DeselectAllElements();
         }
 
         /// <summary>
@@ -883,26 +890,46 @@ namespace Greenshot.Editor.Drawing
         /// </summary>
         /// <param name="direction">Direction in which to move element.</param>
         /// <param name="targetElement">The element to move.</param>
-        public void PushOut(Direction direction, IDrawableContainer targetElement)
+        /// <param name="surface">Optional target surface. If null, Parent will be used.</param>
+        public void PushOut(Direction direction, IDrawableContainer targetElement, ISurface surface = null)
         {
+            surface ??= Parent;
+            if (surface == null)
+            {
+                return;
+            }
+
             Expansion expansion = GetExpansionFromSize(direction, targetElement.Size);
             
-            Parent.ResizeCanvas(expansion);
+            surface.ResizeCanvas(expansion);
 
-            SnapContainerToEdge(direction, targetElement);
+            SnapContainerToEdge(direction, targetElement, surface);
 
-            Parent.DeselectAllElements();
+            surface.DeselectAllElements();
         }
 
-        private void SnapContainerToEdge(Direction direction, IDrawableContainer targetElement)
+        private void SnapContainerToEdge(Direction direction, IDrawableContainer targetElement, ISurface surface = null)
         {
-            Size surfaceBounds = GetParentSurfaceSize();
+            Size surfaceBounds = GetSurfaceSize(surface ?? Parent);
+            if (surfaceBounds.IsEmpty)
+            {
+                return;
+            }
             targetElement.SnapToEdge(direction, surfaceBounds);
         }
 
         private Size GetParentSurfaceSize()
         {
-            return new Size(Parent.Image.Width, Parent.Image.Height);
+            return GetSurfaceSize(Parent);
+        }
+
+        private static Size GetSurfaceSize(ISurface surface)
+        {
+            if (surface?.Image == null)
+            {
+                return Size.Empty;
+            }
+            return new Size(surface.Image.Width, surface.Image.Height);
         }
 
         /// <summary>
@@ -936,7 +963,7 @@ namespace Greenshot.Editor.Drawing
             return expansion;
         }
 
-        private ToolStripMenuItem GetPushOutSubMenu()
+        private ToolStripMenuItem GetPushOutSubMenu(ISurface surface)
         {
             var pushOutSubmenu = new ToolStripMenuItem(Language.GetString(LangKey.editor_pushout));
 
@@ -949,7 +976,7 @@ namespace Greenshot.Editor.Drawing
             {
                 if (this.Count > 0)
                 {
-                    PushOut(Direction.TOP, this[0]);
+                    PushOut(Direction.TOP, this[0], surface);
                 }
             };
             pushOutSubmenu.DropDownItems.Add(item);
@@ -963,7 +990,7 @@ namespace Greenshot.Editor.Drawing
             {
                 if (this.Count > 0)
                 {
-                    PushOut(Direction.RIGHT, this[0]);
+                    PushOut(Direction.RIGHT, this[0], surface);
                 }
             };
             pushOutSubmenu.DropDownItems.Add(item);
@@ -977,7 +1004,7 @@ namespace Greenshot.Editor.Drawing
             {
                 if (this.Count > 0)
                 {
-                    PushOut(Direction.BOTTOM, this[0]);
+                    PushOut(Direction.BOTTOM, this[0], surface);
                 }
             };
             pushOutSubmenu.DropDownItems.Add(item);
@@ -991,7 +1018,7 @@ namespace Greenshot.Editor.Drawing
             {
                 if (this.Count > 0)
                 {
-                    PushOut(Direction.LEFT, this[0]);
+                    PushOut(Direction.LEFT, this[0], surface);
                 }
             };
             pushOutSubmenu.DropDownItems.Add(item);
@@ -1010,12 +1037,16 @@ namespace Greenshot.Editor.Drawing
             };
             item.Click += delegate
             {
+                if (surface?.Image == null)
+                {
+                    return;
+                }
                 foreach (IDrawableContainer item in this)
                 {
                     MakeBoundsChangeUndoable(false);
                     item.Width = surface.Image.Width;
                 }
-                SnapAllToEdge(Direction.LEFT);
+                SnapAllToEdge(Direction.LEFT, surface);
                 surface.Invalidate();
             };
             fitSubmenu.DropDownItems.Add(item);
@@ -1027,12 +1058,16 @@ namespace Greenshot.Editor.Drawing
             };
             item.Click += delegate
             {
+                if (surface?.Image == null)
+                {
+                    return;
+                }
                 foreach (IDrawableContainer item in this)
                 {
                     MakeBoundsChangeUndoable(false);
                     item.Height = surface.Image.Height;
                 }
-                SnapAllToEdge(Direction.TOP);
+                SnapAllToEdge(Direction.TOP, surface);
                 surface.Invalidate();
             };
             fitSubmenu.DropDownItems.Add(item);
@@ -1040,7 +1075,7 @@ namespace Greenshot.Editor.Drawing
             return fitSubmenu;
         }
 
-        private ToolStripMenuItem GetSnapSubMenu()
+        private ToolStripMenuItem GetSnapSubMenu(ISurface surface)
         {
             var snapSubmenu = new ToolStripMenuItem(Language.GetString(LangKey.editor_snap));
 
@@ -1051,7 +1086,7 @@ namespace Greenshot.Editor.Drawing
             };
             item.Click += delegate
             {
-                SnapAllToEdge(Direction.TOP);
+                SnapAllToEdge(Direction.TOP, surface);
             };
             snapSubmenu.DropDownItems.Add(item);
 
@@ -1062,7 +1097,7 @@ namespace Greenshot.Editor.Drawing
             };
             item.Click += delegate
             {
-                SnapAllToEdge(Direction.RIGHT);
+                SnapAllToEdge(Direction.RIGHT, surface);
             };
             snapSubmenu.DropDownItems.Add(item);
 
@@ -1073,7 +1108,7 @@ namespace Greenshot.Editor.Drawing
             };
             item.Click += delegate
             {
-                SnapAllToEdge(Direction.BOTTOM);
+                SnapAllToEdge(Direction.BOTTOM, surface);
             };
             snapSubmenu.DropDownItems.Add(item);
 
@@ -1084,7 +1119,7 @@ namespace Greenshot.Editor.Drawing
             };
             item.Click += delegate
             {
-                SnapAllToEdge(Direction.LEFT);
+                SnapAllToEdge(Direction.LEFT, surface);
             };
             snapSubmenu.DropDownItems.Add(item);
 
